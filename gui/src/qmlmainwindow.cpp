@@ -5161,6 +5161,9 @@ renderer_backend_ready:
     deferred_swap_thread->start(QThread::HighPriority);
 
     qml_engine = new QQmlEngine(this);
+#ifdef Q_OS_WIN
+    qml_engine->addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/qml"));
+#endif
     qml_engine->addImageProvider(QStringLiteral("svg"), new QmlSvgProvider);
     if (!qml_engine->incubationController())
         qml_engine->setIncubationController(quick_window->incubationController());

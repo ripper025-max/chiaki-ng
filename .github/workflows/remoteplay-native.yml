@@ -105,6 +105,10 @@ jobs:
         run: |
           ./scripts/deploy-windows-msys2.sh chiaki-ng-Win build/gui/chiaki.exe "${{ github.workspace }}/build/third-party/cpp-steam-tools" /mingw64 gui/src/qml
 
+      - name: Include diagnostic safe mode
+        run: |
+          cp scripts/remoteplay-safe-mode.cmd chiaki-ng-Win/SafeMode.cmd
+
       - name: Package chiaki-ng
         run: |
           CHIAKI_VERSION_MAJOR="$(grep 'CHIAKI_VERSION_MAJOR' CMakeLists.txt | grep -Eo '[0-9]+')"
@@ -118,7 +122,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: RemotePlay-Native-AI-Windows-x64-portable
-          path: ${{ env.RELEASE_PACKAGE_PATH }}
+          path: chiaki-ng-Win/
           if-no-files-found: error
           retention-days: 30
 
