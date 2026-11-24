@@ -12,9 +12,9 @@ DialogView {
     property alias host: hostField.text
     title: qsTr("PS5 / PS4 등록")
     buttonText: qsTr("등록")
-    buttonEnabled: hostField.text.trim() && pin.acceptableInput && cpin.acceptableInput && (!onlineId.visible || onlineId.text.trim()) && (!accountId.visible || accountId.text.trim())
+    buttonEnabled: hostField.text.trim() && pin.acceptableInput && cpin.acceptableInput && (!onlineId.visible || onlineId.text.trim()) && (ps4_7.checked || accountId.text.trim())
     StackView.onActivated: {
-        if(Chiaki.settings.psnAccountId)
+        if(!accountId.text.trim() && Chiaki.settings.psnAccountId)
             accountId.text = Chiaki.settings.psnAccountId
     }
     onAccepted: {
@@ -71,63 +71,52 @@ DialogView {
             Label {
                 Layout.alignment: Qt.AlignRight
                 text: qsTr("PSN 계정 ID:")
-                visible: accountId.visible
+                visible: !ps4_7.checked
             }
 
-            C.TextField {
-                id: accountId
+            RowLayout {
                 visible: !ps4_7.checked
-                echoMode: Chiaki.settings.streamerMode ? TextInput.Password : TextInput.Normal
-                placeholderText: qsTr("PSN 로그인으로 자동 입력")
-                Layout.preferredWidth: 400 - loginButton.width - 10
-                KeyNavigation.priority: {
-                    if(readOnly)
-                        KeyNavigation.BeforeItem
-                    else
-                        KeyNavigation.AfterItem
+                Layout.preferredWidth: 400
+                spacing: 10
+
+                C.TextField {
+                    id: accountId
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 180
+                    echoMode: Chiaki.settings.streamerMode ? TextInput.Password : TextInput.Normal
+                    placeholderText: qsTr("계정 ID")
+                    KeyNavigation.up: hostField
+                    KeyNavigation.right: loginButton
+                    KeyNavigation.down: pin
                 }
-                KeyNavigation.up: hostField
-                KeyNavigation.right: loginButton
-                KeyNavigation.down: pin
 
                 C.Button {
                     id: loginButton
-                    anchors {
-                        left: parent.right
-                        verticalCenter: parent.verticalCenter
-                        leftMargin: 10
-                    }
-                    topPadding: 18
-                    bottomPadding: 18
+                    Layout.preferredWidth: 150
+                    Layout.minimumWidth: 150
                     text: qsTr("PSN 로그인")
-                    onClicked: stack.push(psnLoginDialogComponent, {login: true, callback: (id) => accountId.text = id})
-                    visible: !Chiaki.settings.psnAccountId
+                    visible: true
+                    enabled: true
+                    onClicked: stack.push(psnLoginDialogComponent, {
+                        login: true,
+                        callback: function(id) {
+                            accountId.text = id;
+                            pin.forceActiveFocus(Qt.TabFocusReason);
+                        }
+                    })
                     Material.roundedScale: Material.SmallScale
-                    KeyNavigation.priority: KeyNavigation.BeforeItem
-                    KeyNavigation.up: hostField
                     KeyNavigation.left: accountId
-                    KeyNavigation.right: pin
                     KeyNavigation.down: pin
                 }
-                C.Button {
-                    id: lookupButton
-                    anchors {
-                        left: loginButton.right
-                        verticalCenter: parent.verticalCenter
-                        leftMargin: 10
-                    }
-                    topPadding: 18
-                    bottomPadding: 18
-                    text: qsTr("공개 계정 검색")
-                    onClicked: stack.push(psnLoginDialogComponent, {login: false, callback: (id) => accountId.text = id})
-                    visible: false
-                    Material.roundedScale: Material.SmallScale
-                    KeyNavigation.up: hostField
-                    KeyNavigation.priority: KeyNavigation.BeforeItem
-                    KeyNavigation.left: loginButton
-                    KeyNavigation.right: lookupButton
-                    KeyNavigation.down: pin
-                }
+            }
+
+            Item { Layout.preferredWidth: 1 }
+            Label {
+                Layout.preferredWidth: 400
+                wrapMode: Text.WordWrap
+                visible: !ps4_7.checked
+                text: qsTr("PSN 로그인 버튼을 눌러 소니 계정으로 로그인하세요.\n계정 ID가 자동으로 입력됩니다.")
+                opacity: 0.85
             }
 
             Label {
