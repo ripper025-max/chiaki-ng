@@ -14,9 +14,9 @@ DialogView {
     property bool submitting: false
     property bool closing: false
     property var psnurl: ""
-    title: qsTr("PSN Login")
+    title: qsTr("PSN 로그인")
     buttonVisible: false
-    buttonText: qsTr("Get Account ID")
+    buttonText: qsTr("계정 ID 가져오기")
     buttonEnabled: !submitting && url.text.trim()
     onAccepted: {
         submitting = true;
@@ -90,7 +90,7 @@ DialogView {
                         Layout.fillHeight: true
                         Layout.preferredWidth: 350
                         flat: true
-                        text: "reload + clear cookies"
+                        text: qsTr("쿠키 삭제 후 새로고침")
                         Image {
                             anchors {
                                 left: parent.left
@@ -133,7 +133,7 @@ DialogView {
                             source: "qrc:/icons/r1.svg"
                         }
                         focusPolicy: Qt.NoFocus
-                        text: "Use external browser"
+                        text: qsTr("기본 브라우저에서 로그인")
                         onClicked: {
                             nativeLoginForm.visible = false;
                             psnLoginToolbar.visible = false;
@@ -185,7 +185,7 @@ DialogView {
                 columnSpacing: 20
                 Label {
                     id: nativeErrorHeader
-                    text: "Retrieving PSN account ID failed with error: "
+                    text: qsTr("PSN 계정 확인 실패: ")
                     Layout.fillHeight: true
                     Layout.preferredWidth: 400
                     Layout.leftMargin: 20
@@ -200,7 +200,7 @@ DialogView {
 
                 Label {
                     id: retryButton
-                    text: "Retry process"
+                    text: qsTr("다시 시도")
                     Layout.fillHeight: true
                     Layout.preferredWidth: 300
                     Layout.leftMargin: 20
@@ -208,7 +208,7 @@ DialogView {
                 C.Button {
                     firstInFocusChain: true
                     lastInFocusChain: true
-                    text: "Retry"
+                    text: qsTr("재시도")
                     onClicked: {
                         nativeErrorGrid.visible = false;
                         nativeErrorLabel.text = "";
@@ -289,7 +289,7 @@ DialogView {
             Label {
                 id: errorHeader
                 visible: false
-                text: "Retrieving PSN account ID failed with error"
+                text: qsTr("PSN 계정 확인 실패")
             }
 
             Label {
@@ -298,7 +298,7 @@ DialogView {
             }
 
             Label {
-                text: qsTr("Open Web Browser with copied URL")
+                text: qsTr("소니 공식 로그인 페이지에서 로그인하세요.")
                 visible: psnurl
             }
 
@@ -312,7 +312,7 @@ DialogView {
 
             C.Button {
                 id: copyUrl
-                text: qsTr("Click to Re-Copy URL")
+                text: qsTr("로그인 주소 다시 복사")
                 onClicked: {
                     openurl.selectAll()
                     openurl.copy()
@@ -324,12 +324,12 @@ DialogView {
             }
 
             Label {
-                text: qsTr("Redirect URL from Web Browser")
+                text: qsTr("로그인 완료 후 주소창 전체 주소:")
             }
 
             TextField {
                 id: url
-                echoMode: Chiaki.settings.streamerMode ? TextInput.Password : TextInput.Normal
+                echoMode: TextInput.Password
                 Layout.preferredWidth: 400
                 KeyNavigation.priority: {
                     if(readOnly)
@@ -347,7 +347,7 @@ DialogView {
                 KeyNavigation.right: pasteUrl
                 C.Button {
                     id: pasteUrl
-                    text: qsTr("Click to Paste URL")
+                    text: qsTr("주소 붙여넣기")
                     anchors {
                         left: parent.right
                         verticalCenter: parent.verticalCenter
@@ -381,7 +381,7 @@ DialogView {
                 id: formLabel
                 Layout.alignment: Qt.AlignCenter
                 Layout.bottomMargin: 50
-                text: qsTr("This requires your PSN privacy settings to allow anyone to find you in your search")
+                text: qsTr("PSN 공개 검색 허용이 필요합니다.")
             }
 
             C.TextField {
@@ -390,7 +390,7 @@ DialogView {
                 Layout.preferredWidth: 400
                 Layout.alignment: Qt.AlignCenter
                 firstInFocusChain: true
-                placeholderText: qsTr("Username")
+                placeholderText: qsTr("PSN 닉네임")
                 onAccepted: submitButton.clicked()
             }
 
@@ -399,7 +399,7 @@ DialogView {
                 Layout.preferredWidth: 400
                 Layout.alignment: Qt.AlignCenter
                 lastInFocusChain: true
-                text: qsTr("Submit")
+                text: qsTr("확인")
                 onClicked: {
                     const username = usernameField.text.trim();
                     if (!username.length || !enabled)
@@ -414,7 +414,7 @@ DialogView {
                                 dialog.close();
                             } else {
                                 enabled = true;
-                                formLabel.text = qsTr("Error: %1!").arg(response["error"]);
+                                formLabel.text = qsTr("오류: %1").arg(response["error"]);
                             }
                         }
                     }

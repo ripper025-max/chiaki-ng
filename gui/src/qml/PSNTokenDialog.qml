@@ -14,11 +14,11 @@ DialogView {
     property bool closing: false
     title: {
         if(expired)
-            qsTr("Credentials Expired: Refresh PSN Remote Connection")
+            qsTr("PSN 연결 만료: 다시 로그인")
         else
-            qsTr("Setup Automatic PSN Remote Connection")
+            qsTr("PSN 계정 연결")
     }
-    buttonText: qsTr("Setup")
+    buttonText: qsTr("연결")
     buttonEnabled: url.text.trim()
     buttonVisible: false
     onAccepted: {
@@ -94,7 +94,7 @@ DialogView {
                         Layout.fillHeight: true
                         Layout.preferredWidth: 350
                         flat: true
-                        text: "reload + clear cookies"
+                        text: qsTr("쿠키 삭제 후 새로고침")
                         Image {
                             anchors {
                                 left: parent.left
@@ -137,7 +137,7 @@ DialogView {
                             source: "qrc:/icons/r1.svg"
                         }
                         focusPolicy: Qt.NoFocus
-                        text: "Use external browser"
+                        text: qsTr("기본 브라우저에서 로그인")
                         onClicked: {
                             nativeTokenForm.visible = false;
                             psnTokenToolbar.visible = false;
@@ -189,7 +189,7 @@ DialogView {
                 columnSpacing: 20
                 Label {
                     id: nativeErrorHeader
-                    text: "Retrieving PSN account ID failed with error: "
+                    text: qsTr("PSN 계정 확인 실패: ")
                     Layout.fillHeight: true
                     Layout.preferredWidth: 400
                     Layout.leftMargin: 20
@@ -204,7 +204,7 @@ DialogView {
 
                 Label {
                     id: retryButton
-                    text: "Retry process"
+                    text: qsTr("다시 시도")
                     Layout.fillHeight: true
                     Layout.preferredWidth: 300
                     Layout.leftMargin: 20
@@ -212,7 +212,7 @@ DialogView {
                 C.Button {
                     firstInFocusChain: true
                     lastInFocusChain: true
-                    text: "Retry"
+                    text: qsTr("재시도")
                     onClicked: {
                         nativeErrorGrid.visible = false;
                         nativeErrorLabel.text = "";
@@ -303,7 +303,7 @@ DialogView {
             columnSpacing: 20
 
             Label {
-                text: qsTr("Open Web Browser with copied URL")
+                text: qsTr("소니 공식 로그인 페이지에서 로그인하세요.")
                 visible: psnurl
             }
 
@@ -317,7 +317,7 @@ DialogView {
 
             C.Button {
                 id: copyUrl
-                text: qsTr("Click to Re-Copy URL")
+                text: qsTr("로그인 주소 다시 복사")
                 onClicked: {
                     openurl.selectAll()
                     openurl.copy()
@@ -329,12 +329,12 @@ DialogView {
             }
 
             Label {
-                text: qsTr("Redirect URL from Web Browser")
+                text: qsTr("로그인 완료 후 주소창 전체 주소:")
             }
 
             TextField {
                 id: url
-                echoMode: Chiaki.settings.streamerMode ? TextInput.Password : TextInput.Normal
+                echoMode: TextInput.Password
                 Layout.preferredWidth: 400
                 KeyNavigation.priority: {
                     if(readOnly)
@@ -352,7 +352,7 @@ DialogView {
                 KeyNavigation.right: pasteUrl
                 C.Button {
                     id: pasteUrl
-                    text: qsTr("Click to Paste URL")
+                    text: qsTr("주소 붙여넣기")
                     anchors {
                         left: parent.right
                         verticalCenter: parent.verticalCenter
@@ -378,7 +378,7 @@ DialogView {
                 parent: Overlay.overlay
                 x: Math.round((root.width - width) / 2)
                 y: Math.round((root.height - height) / 2)
-                title: qsTr("Create PSN Automatic Remote Connection Token")
+                title: qsTr("PSN 연결 처리 중")
                 modal: true
                 closePolicy: Popup.NoAutoClose
                 standardButtons: Dialog.Cancel

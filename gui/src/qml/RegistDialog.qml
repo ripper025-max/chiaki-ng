@@ -10,8 +10,8 @@ import "controls" as C
 DialogView {
     property bool ps5: true
     property alias host: hostField.text
-    title: qsTr("Register Console")
-    buttonText: qsTr("Register")
+    title: qsTr("PS5 / PS4 등록")
+    buttonText: qsTr("등록")
     buttonEnabled: hostField.text.trim() && pin.acceptableInput && cpin.acceptableInput && (!onlineId.visible || onlineId.text.trim()) && (!accountId.visible || accountId.text.trim())
     StackView.onActivated: {
         if(Chiaki.settings.psnAccountId)
@@ -44,7 +44,7 @@ DialogView {
 
             Label {
                 Layout.alignment: Qt.AlignRight
-                text: qsTr("Host:")
+                text: qsTr("콘솔 IP 주소:")
             }
 
             C.TextField {
@@ -56,7 +56,7 @@ DialogView {
 
             Label {
                 Layout.alignment: Qt.AlignRight
-                text: qsTr("PSN Online-ID:")
+                text: qsTr("PSN 닉네임:")
                 visible: onlineId.visible
             }
 
@@ -64,13 +64,13 @@ DialogView {
                 id: onlineId
                 echoMode: Chiaki.settings.streamerMode ? TextInput.Password : TextInput.Normal
                 visible: ps4_7.checked
-                placeholderText: qsTr("username, case-sensitive")
+                placeholderText: qsTr("PSN 닉네임 (대소문자 구분)")
                 Layout.preferredWidth: 400
             }
 
             Label {
                 Layout.alignment: Qt.AlignRight
-                text: qsTr("PSN Account-ID:")
+                text: qsTr("PSN 계정 ID:")
                 visible: accountId.visible
             }
 
@@ -78,7 +78,7 @@ DialogView {
                 id: accountId
                 visible: !ps4_7.checked
                 echoMode: Chiaki.settings.streamerMode ? TextInput.Password : TextInput.Normal
-                placeholderText: qsTr("base64")
+                placeholderText: qsTr("PSN 로그인으로 자동 입력")
                 Layout.preferredWidth: 400 - loginButton.width - 10
                 KeyNavigation.priority: {
                     if(readOnly)
@@ -99,14 +99,14 @@ DialogView {
                     }
                     topPadding: 18
                     bottomPadding: 18
-                    text: qsTr("PSN Login")
+                    text: qsTr("PSN 로그인")
                     onClicked: stack.push(psnLoginDialogComponent, {login: true, callback: (id) => accountId.text = id})
                     visible: !Chiaki.settings.psnAccountId
                     Material.roundedScale: Material.SmallScale
                     KeyNavigation.priority: KeyNavigation.BeforeItem
                     KeyNavigation.up: hostField
                     KeyNavigation.left: accountId
-                    KeyNavigation.right: lookupButton
+                    KeyNavigation.right: pin
                     KeyNavigation.down: pin
                 }
                 C.Button {
@@ -118,9 +118,9 @@ DialogView {
                     }
                     topPadding: 18
                     bottomPadding: 18
-                    text: qsTr("Public Lookup")
+                    text: qsTr("공개 계정 검색")
                     onClicked: stack.push(psnLoginDialogComponent, {login: false, callback: (id) => accountId.text = id})
-                    visible: !Chiaki.settings.psnAccountId
+                    visible: false
                     Material.roundedScale: Material.SmallScale
                     KeyNavigation.up: hostField
                     KeyNavigation.priority: KeyNavigation.BeforeItem
@@ -132,7 +132,7 @@ DialogView {
 
             Label {
                 Layout.alignment: Qt.AlignRight
-                text: qsTr("Remote Play PIN:")
+                text: qsTr("PS5 기기 연결 코드 (8자리):")
             }
 
             C.TextField {
@@ -151,7 +151,7 @@ DialogView {
 
             Label {
                 Layout.alignment: Qt.AlignRight
-                text: qsTr("Console Pin [Optional]")
+                text: qsTr("콘솔 로그인 PIN (선택)")
             }
 
             C.TextField {
@@ -163,7 +163,7 @@ DialogView {
 
             Label {
                 Layout.alignment: Qt.AlignRight
-                text: qsTr("Console:")
+                text: qsTr("콘솔 종류:")
             }
 
             ColumnLayout {
@@ -209,7 +209,7 @@ DialogView {
                 parent: Overlay.overlay
                 x: Math.round((root.width - width) / 2)
                 y: Math.round((root.height - height) / 2)
-                title: qsTr("Register Console")
+                title: qsTr("PS5 / PS4 등록")
                 modal: true
                 closePolicy: Popup.NoAutoClose
                 standardButtons: Dialog.Cancel

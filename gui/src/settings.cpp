@@ -704,7 +704,12 @@ static const QMap<RenderBackend, QString> render_backend_values = {
 	{ RenderBackend::OpenGL, "opengl" },
 };
 
+#ifdef Q_OS_WIN
+// First launch favors compatibility; Vulkan remains selectable in video settings.
+static const RenderBackend render_backend_default = RenderBackend::OpenGL;
+#else
 static const RenderBackend render_backend_default = RenderBackend::Vulkan;
+#endif
 
 RenderBackend Settings::GetRenderBackend() const
 {

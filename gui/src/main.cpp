@@ -41,6 +41,7 @@ int main(int argc, char *argv[]) { return real_main(argc, argv); }
 #include <QMap>
 #include <QSurfaceFormat>
 #include <QFile>
+#include <QDir>
 #include <QMutex>
 #include <QMutexLocker>
 #include <QDateTime>
@@ -146,7 +147,7 @@ int real_main(int argc, char *argv[])
 		qInstallMessageHandler([](QtMsgType type, const QMessageLogContext &, const QString &msg) {
 			static QMutex mutex;
 			QMutexLocker lock(&mutex);
-			QFile file(QCoreApplication::applicationDirPath() + "/startup-log.txt");
+			QFile file(QDir::tempPath() + "/RemotePlayNative-startup-log.txt");
 			if (file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
 				file.write((QDateTime::currentDateTime().toString(Qt::ISODateWithMs) + " " + msg + "\n").toUtf8());
 				file.flush();

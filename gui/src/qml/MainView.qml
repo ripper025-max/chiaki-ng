@@ -13,9 +13,7 @@ Pane {
         if(!Chiaki.autoConnect && !root.initialAsk && !Chiaki.window.directStream)
         {
             root.initialAsk = true;
-            if(Chiaki.settings.addSteamShortcutAsk && (typeof Chiaki.createSteamShortcut === "function"))
-                root.showRemindDialog(qsTr("스팀 이미지 및 컨트롤러 설정"), qsTr("RemotePlay Native를 스팀에 등록하고 공식 이미지와 컨트롤러 설정을 적용하시겠습니까?") + "\n\n" + qsTr("(나중에 메인 메뉴에서 버튼을 누르거나 R3를 눌러 설정할 수 있습니다.)"), false, () => root.showSteamShortcutDialog(true));
-            else if(Chiaki.settings.remotePlayAsk)
+            if(Chiaki.settings.remotePlayAsk)
             {
                 if(!Chiaki.settings.psnRefreshToken || !Chiaki.settings.psnAuthToken || !Chiaki.settings.psnAuthTokenExpiry || !Chiaki.settings.psnAccountId)
                     root.showRemindDialog(qsTr("PSN 원격 플레이"), qsTr("PSN 계정을 연결하시겠습니까?\n- PS5 자동 등록\n- 포트포워딩 없이 외부 인터넷 연결") + "\n\n" + qsTr("(나중에 설정의 계정 및 구성 메뉴에서 연결할 수 있습니다.)"), true, () => root.showPSNTokenDialog(false));
@@ -101,7 +99,7 @@ Pane {
                 Layout.fillHeight: true
                 Layout.preferredWidth: 350
                 flat: true
-                text: "Create Steam Shortcut"
+                text: qsTr("스팀 바로가기 만들기")
                 focusPolicy: Qt.NoFocus
                 onClicked: root.showSteamShortcutDialog(false)
                 Material.roundedScale: Material.SmallScale
@@ -123,7 +121,7 @@ Pane {
                 Layout.fillHeight: true
                 Layout.preferredWidth: 400
                 flat: true
-                text: "Refresh PSN Hosts"
+                text: qsTr("PSN 콘솔 새로고침")
                 icon.source: "qrc:/icons/r1.svg"
                 focusPolicy: Qt.NoFocus
                 onClicked: Chiaki.refreshPsnToken();
@@ -144,7 +142,7 @@ Pane {
                 Layout.fillHeight: true
                 Layout.preferredWidth: 300
                 flat: true
-                text: "Add Manual Host"
+                text: qsTr("콘솔 수동 추가")
                 focusPolicy: Qt.NoFocus
                 onClicked: root.showManualHostDialog()
                 Material.roundedScale: Material.SmallScale

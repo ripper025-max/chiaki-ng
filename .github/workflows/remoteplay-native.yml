@@ -109,6 +109,19 @@ jobs:
         run: |
           cp scripts/remoteplay-safe-mode.cmd chiaki-ng-Win/SafeMode.cmd
 
+      - name: Check packaged executable initialization
+        shell: pwsh
+        run: |
+          $env:SDL_AUDIODRIVER = "dummy"
+          $env:REMOTEPLAY_DIAGNOSTIC_LOG = "1"
+          $exe = Join-Path (Get-Location) "chiaki-ng-Win/chiaki.exe"
+          $p = Start-Process -FilePath $exe -ArgumentList @("--profile", "ci-smoke", "list") -WorkingDirectory (Split-Path $exe) -PassThru
+          if (-not $p.WaitForExit(60000)) { $p.Kill(); throw "Packaged executable initialization timed out" }
+          $p.Refresh()
+          if ($p.ExitCode -ne 0) { throw "Packaged executable exited with code $($p.ExitCode)" }
+          if (!(Test-Path "$env:TEMP/RemotePlayNative-startup-log.txt")) { throw "Qt startup log missing" }
+          Get-Content "$env:TEMP/RemotePlayNative-startup-log.txt"
+
       - name: Package chiaki-ng
         run: |
           CHIAKI_VERSION_MAJOR="$(grep 'CHIAKI_VERSION_MAJOR' CMakeLists.txt | grep -Eo '[0-9]+')"
