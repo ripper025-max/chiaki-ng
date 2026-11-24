@@ -40,6 +40,10 @@ int main(int argc, char *argv[]) { return real_main(argc, argv); }
 #include <QCommandLineParser>
 #include <QMap>
 #include <QSurfaceFormat>
+#include <QFile>
+#include <QMutex>
+#include <QMutexLocker>
+#include <QDateTime>
 
 Q_DECLARE_METATYPE(ChiakiLogLevel)
 Q_DECLARE_METATYPE(ChiakiRegistEventType)
@@ -101,11 +105,7 @@ int real_main(int argc, char *argv[])
 
 	qputenv("QTWEBENGINE_CHROMIUM_FLAGS", "--disable-gpu");
 #if defined(Q_OS_WIN)
-	const size_t cSize = strlen(argv[0])+1;
-	wchar_t wc[cSize];
-	mbstowcs (wc, argv[0], cSize);
-	QString import_path = QFileInfo(QString::fromWCharArray(wc)).dir().absolutePath() + "/qml";
-	qputenv("QML_IMPORT_PATH", import_path.toUtf8());
+
 	// Microsoft's OpenCL, OpenGL and Vulkan Compatibility Pack adds the Dozen driver (Vulkan on
 	// D3D12) beside the GPU's own, and loading it can crash the app even when it isn't used. Where
 	// Dozen is the only Vulkan driver, Vulkan then finds no device and chiaki-ng uses OpenGL,
@@ -142,6 +142,19 @@ int real_main(int argc, char *argv[])
 	QtWebEngineQuick::initialize();
 #endif
 	QApplication app(argc, argv);
+	if (qEnvironmentVariableIsSet("REMOTEPLAY_DIAGNOSTIC_LOG")) {
+		qInstallMessageHandler([](QtMsgType type, const QMessageLogContext &, const QString &msg) {
+			static QMutex mutex;
+			QMutexLocker lock(&mutex);
+			QFile file(QCoreApplication::applicationDirPath() + "/startup-log.txt");
+			if (file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
+				file.write((QDateTime::currentDateTime().toString(Qt::ISODateWithMs) + " " + msg + "\n").toUtf8());
+				file.flush();
+			}
+			if (type == QtFatalMsg) abort();
+		});
+		qInfo() << "RemotePlay Native diagnostic startup";
+	}
 
 #ifdef Q_OS_MACOS
 	QGuiApplication::setWindowIcon(QIcon(":/icons/chiaking_macos.svg"));
