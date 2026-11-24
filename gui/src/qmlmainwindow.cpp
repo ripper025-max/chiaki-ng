@@ -7693,11 +7693,7 @@ void QmlMainWindow::render()
         native_upscale_governor.select(0, false, chiaki_time_now_monotonic_us());
     const int active_mode = !fsrcnnx_hook ? 0 : fsrcnnx_hook == fsrcnnx_hook_16 ? 3 :
         fsrcnnx_hook == fsrcnnx_hook_8 ? 2 : 1;
-    if (native_upscale_mode.fetchAndStoreRelaxed(active_mode) != active_mode) {
-        qCInfo(chiakiGui) << "Native upscale mode:" << nativeUpscaleMode();
-        emit nativeUpscaleModeChanged();
-    }
-    const struct pl_hook *active_hooks[] = {fsrcnnx_hook};
+     const struct pl_hook *active_hooks[] = {fsrcnnx_hook};
     if (fsrcnnx_hook) {
         params.hooks = active_hooks;
         params.num_hooks = 1;
@@ -7777,8 +7773,11 @@ void QmlMainWindow::render()
     if (vsr_applied) {
         params.hooks = nullptr;
         params.num_hooks = 0;
-        if (native_upscale_mode.fetchAndStoreRelaxed(4) != 4)
-            emit nativeUpscaleModeChanged();
+    }
+    const int actual_mode = vsr_applied ? 4 : active_mode;
+    if (native_upscale_mode.fetchAndStoreRelaxed(actual_mode) != actual_mode) {
+        qCInfo(chiakiGui) << "Native upscale mode:" << nativeUpscaleMode();
+        emit nativeUpscaleModeChanged();
     }
     if (flow_applied) params.frame_mixer = nullptr;
 
