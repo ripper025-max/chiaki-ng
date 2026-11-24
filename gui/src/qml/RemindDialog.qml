@@ -37,7 +37,7 @@ Dialog {
         if(!remotePlay && Chiaki.settings.remotePlayAsk)
         {
             if(!Chiaki.settings.psnRefreshToken || !Chiaki.settings.psnAuthToken || !Chiaki.settings.psnAuthTokenExpiry || !Chiaki.settings.psnAccountId)
-                root.showRemindDialog(qsTr("Remote Play via PSN"), qsTr("Would you like to connect to PSN?\nThis enables:\n- Automatic registration\n- Playing outside of your home network without port forwarding?") + "\n\n" + qsTr("(Note: If you select no now and want to do this later, go to the Config section of the settings.)"), true, () => root.showPSNTokenDialog(false));
+                root.showRemindDialog(qsTr("PSN 원격 플레이"), qsTr("PSN 계정을 연결하시겠습니까?\n- PS5 자동 등록\n- 포트포워딩 없이 외부 인터넷 연결") + "\n\n" + qsTr("(나중에 설정의 계정 및 구성 메뉴에서 연결할 수 있습니다.)"), true, () => root.showPSNTokenDialog(false));
             else
                 Chiaki.settings.remotePlayAsk = false;
         }
@@ -70,7 +70,7 @@ Dialog {
             spacing: 20
 
             Button {
-                text: qsTr("Yes")
+                text: qsTr("예")
                 Material.background: Material.accent
                 flat: true
                 leftPadding: 50
@@ -92,7 +92,7 @@ Dialog {
 
             Button {
                 Material.background: Material.accent
-                text: qsTr("No")
+                text: qsTr("아니요")
                 flat: true
                 leftPadding: 50
                 onClicked: dialog.reject()
@@ -113,7 +113,7 @@ Dialog {
 
             Button {
                 Material.background: Material.accent
-                text: qsTr("Remind Me Later")
+                text: qsTr("나중에")
                 flat: true
                 leftPadding: 50
                 onClicked: dialog.close()
