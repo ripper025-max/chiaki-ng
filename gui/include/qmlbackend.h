@@ -330,6 +330,8 @@ private:
     bool controller_mapping_in_progress = false;
     bool enable_analog_stick_mapping = false;
     bool resume_session = false;
+    bool native_session_connected = false;
+    quint64 native_reconnect_generation = 0;
     bool settings_allocd = false;
     HostMAC auto_connect_mac = {};
     QString auto_connect_nickname = "";

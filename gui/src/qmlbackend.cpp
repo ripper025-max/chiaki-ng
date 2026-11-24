@@ -569,6 +569,8 @@ void QmlBackend::updateAudioVolume()
 
 void QmlBackend::goToSleep()
 {
+    ++native_reconnect_generation;
+    native_session_connected = false;
     qCInfo(chiakiGui) << "About to sleep";
     if (session) {
         if (this->settings->GetSuspendAction() == SuspendAction::Sleep)
@@ -969,6 +971,8 @@ void QmlBackend::createSession(const StreamSessionConnectInfo &connect_info)
         return;
     }
 
+    ++native_reconnect_generation;
+    native_session_connected = false;
     session_info = connect_info;
     window->setStreamMaxFPS(connect_info.video_profile.max_fps);
     disable_zero_copy = !settings->GetUseZeroCopy();
@@ -1164,7 +1168,15 @@ void QmlBackend::createSession(const StreamSessionConnectInfo &connect_info)
         if (session != session_for_connections)
             return;
 
-        if (chiaki_quit_reason_is_error(reason)) {
+        // Reconnect once after an established session suffers a transport failure.
+        // Never retry user-requested stops or console shutdowns.
+        const bool retry = native_session_connected && !resume_session &&
+            (reason == CHIAKI_QUIT_REASON_STREAM_CONNECTION_UNKNOWN ||
+             reason == CHIAKI_QUIT_REASON_STREAM_CONNECTION_REMOTE_DISCONNECTED);
+        const auto retry_info = session_info;
+        const auto generation = ++native_reconnect_generation;
+        native_session_connected = false;
+        if (chiaki_quit_reason_is_error(reason) && !retry) {
             QString m = tr("Chiaki Session has quit") + ":\n" + chiaki_quit_reason_string(reason);
             if (!reason_str.isEmpty())
                 m += "\n" + tr("Reason") + ": \"" + reason_str + "\"";
@@ -1186,6 +1198,18 @@ void QmlBackend::createSession(const StreamSessionConnectInfo &connect_info)
 
         sleep_inhibit->release();
         setDiscoveryEnabled(true);
+        if (retry) {
+            qCInfo(chiakiGui) << "Transport interrupted; attempting a fresh session in 3 seconds";
+            QTimer::singleShot(3000, this, [this, retry_info, generation]() {
+                if (generation != native_reconnect_generation || session || resume_session)
+                    return;
+#ifdef Q_OS_WINDOWS
+                if (windows_wake_sleep->getWakeState() != WindowsWakeState::Awake)
+                    return;
+#endif
+                createSession(retry_info);
+            });
+        }
 #ifdef Q_OS_WINDOWS
         qCInfo(chiakiGui) << "Checking sleep state: ";
         if(windows_wake_sleep->getWakeState() == WindowsWakeState::Awake)
@@ -1219,8 +1243,10 @@ void QmlBackend::createSession(const StreamSessionConnectInfo &connect_info)
         if (session != session_for_connections)
             return;
 
-        if (session_for_connections->IsConnected())
+        if (session_for_connections->IsConnected()) {
+            native_session_connected = true;
             setDiscoveryEnabled(false);
+        }
     });
     chiaki_log_mutex.lock();
     chiaki_log_ctx = session->GetChiakiLog();
@@ -1532,6 +1558,7 @@ void QmlBackend::setWebEngineHints(QQuickWebEngineProfile *profile)
 
 void QmlBackend::connectToHost(int index, QString nickname)
 {
+    ++native_reconnect_generation;
     window->setWindowAdjustable(false);
     auto server = displayServerAt(index);
     if (!server.valid)
@@ -1655,6 +1682,8 @@ void QmlBackend::connectToHost(int index, QString nickname)
 
 void QmlBackend::stopSession(bool sleep)
 {
+    ++native_reconnect_generation;
+    native_session_connected = false;
     if (!session)
         return;
 

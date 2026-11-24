@@ -44,7 +44,7 @@ Pane {
     Keys.onReturnPressed: if (hostsView.currentItem) hostsView.currentItem.connectToHost()
     Keys.onYesPressed: if (hostsView.currentItem) hostsView.currentItem.wakeUpHost()
     Keys.onNoPressed: if (hostsView.currentItem) hostsView.currentItem.deleteHost()
-    Keys.onEscapePressed: root.showConfirmDialog(qsTr("Quit"), qsTr("Are you sure you want to quit?"), () => Qt.quit())
+    Keys.onEscapePressed: root.showConfirmDialog(qsTr("종료"), qsTr("프로그램을 종료하시겠습니까?"), () => Qt.quit())
     Keys.onPressed: (event) => {
         if (event.modifiers)
             return;
@@ -227,10 +227,10 @@ Pane {
 
             function deleteHost() {
                 if (modelData.manual)
-                    root.showConfirmDialog(qsTr("Delete Console"), qsTr("Are you sure you want to delete this console?"), () => {Chiaki.deleteHost(index)});
+                    root.showConfirmDialog(qsTr("콘솔 삭제"), qsTr("Are you sure you want to delete this console?"), () => {Chiaki.deleteHost(index)});
                         
                 else if (modelData.discovered && !modelData.registered)
-                    root.showConfirmDialog(qsTr("Hide Console"), qsTr("Are you sure you want to hide this console?") + "\n\n" + qsTr("Note: You can unhide from the Consoles section of the Settings under Hidden Consoles"), () => Chiaki.hideHost(modelData.mac, modelData.name));
+                    root.showConfirmDialog(qsTr("콘솔 숨기기"), qsTr("Are you sure you want to hide this console?") + "\n\n" + qsTr("Note: You can unhide from the Consoles section of the Settings under Hidden Consoles"), () => Chiaki.hideHost(modelData.mac, modelData.name));
 
             }
 
@@ -263,15 +263,15 @@ Pane {
                         if (modelData.name)
                             t += modelData.name + "\n";
                         if (modelData.address)
-                            t += qsTr("Address: %1").arg(Chiaki.settings.streamerMode ? "hidden" : modelData.address);
+                            t += qsTr("주소: %1").arg(Chiaki.settings.streamerMode ? "hidden" : modelData.address);
                         if (modelData.mac)
-                            t += "\n" + qsTr("ID: %1 (%2)").arg(Chiaki.settings.streamerMode ? "hidden" : modelData.mac).arg(modelData.registered ? qsTr("registered") : qsTr("unregistered"));
+                            t += "\n" + qsTr("ID: %1 (%2)").arg(Chiaki.settings.streamerMode ? "hidden" : modelData.mac).arg(modelData.registered ? qsTr("등록됨") : qsTr("미등록"));
                         if (modelData.duid)
                         {
                             if(modelData.discovered)
-                                t += "\n" + qsTr("Automatic Registration Available");
+                                t += "\n" + qsTr("자동 등록 가능");
                             else
-                                t += "\n" + qsTr("Remote Connection via PSN");
+                                t += "\n" + qsTr("PSN 외부 연결");
                         } 
                         else
                         {
@@ -315,7 +315,7 @@ Pane {
 
                     Button {
                         Layout.alignment: Qt.AlignCenter
-                        text: modelData.manual ? qsTr("Delete") : qsTr("Hide")
+                        text: modelData.manual ? qsTr("삭제") : qsTr("숨기기")
                         flat: true
                         padding: 20
                         leftPadding: delegate.highlighted ? 50 : undefined
@@ -340,7 +340,7 @@ Pane {
 
                     Button {
                         Layout.alignment: Qt.AlignCenter
-                        text: qsTr("Wake Up")
+                        text: qsTr("원격 부팅")
                         flat: true
                         padding: 20
                         leftPadding: delegate.highlighted ? 50 : undefined
@@ -365,7 +365,7 @@ Pane {
 
                     Button {
                         Layout.alignment: Qt.AlignCenter
-                        text: qsTr("Update Console Pin")
+                        text: qsTr("콘솔 PIN 변경")
                         flat: true
                         padding: 20
                         leftPadding: delegate.highlighted ? 50 : undefined

@@ -17,9 +17,13 @@ CHIAKI_EXPORT uint64_t chiaki_time_now_monotonic_us()
 	LARGE_INTEGER v;
 	if(!QueryPerformanceCounter(&v))
 		return 0;
-	v.QuadPart *= 1000000;
-	v.QuadPart /= f.QuadPart;
-	return v.QuadPart;
+	// Split before multiplication to avoid overflowing after long system uptime.
+	const uint64_t ticks = (uint64_t)v.QuadPart;
+	const uint64_t frequency = (uint64_t)f.QuadPart;
+	if(!frequency)
+		return 0;
+	return (ticks / frequency) * UINT64_C(1000000)
+		+ ((ticks % frequency) * UINT64_C(1000000)) / frequency;
 #else
 	struct timespec time;
 	clock_gettime(CLOCK_MONOTONIC, &time);

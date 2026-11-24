@@ -270,7 +270,7 @@ Item {
             id: goToHomeButton
             Layout.alignment: Qt.AlignCenter
             Layout.preferredHeight: 60
-            text: qsTr("Go to Home Screen")
+            text: qsTr("PS 홈 화면")
             Material.background: activeFocus ? parent.Material.accent : undefined
             Material.roundedScale: Material.SmallScale
             onClicked: Chiaki.sessionGoHome()
@@ -336,7 +336,7 @@ Item {
 
                 Label {
                     Layout.alignment: Qt.AlignRight
-                    text: qsTr("queue depth avg")
+                    text: qsTr("평균 영상 대기열")
                     font.pixelSize: 15
                     opacity: Chiaki.session ? 1 : 0
                     visible: opacity > 0
@@ -358,7 +358,7 @@ Item {
 
                 Label {
                     Layout.alignment: Qt.AlignRight
-                    text: qsTr("pending frame age")
+                    text: qsTr("영상 대기 시간")
                     font.pixelSize: 15
                     opacity: Chiaki.session ? 1 : 0
                     visible: opacity > 0
@@ -381,7 +381,7 @@ Item {
                 Label {
                     Layout.alignment: Qt.AlignRight
                     id: statsPacketLossLabel
-                    text: qsTr("packet loss")
+                    text: qsTr("패킷 손실")
                     font.pixelSize: 15
                     opacity: Chiaki.session ? 1 : 0
                     visible: opacity > 0
@@ -403,7 +403,7 @@ Item {
 
                 Label {
                     Layout.alignment: Qt.AlignRight
-                    text: qsTr("dropped frames")
+                    text: qsTr("누락 프레임")
                     font.pixelSize: 15
                     opacity: Chiaki.session ? 1 : 0
                     visible: opacity > 0
@@ -426,7 +426,7 @@ Item {
 
                 Label {
                     Layout.alignment: Qt.AlignRight
-                    text: qsTr("lost frames")
+                    text: qsTr("손실 프레임")
                     font.pixelSize: 15
                     opacity: Chiaki.session ? 1 : 0
                     visible: opacity > 0
@@ -551,7 +551,7 @@ Item {
 
             ToolButton {
                 id: zoomButton
-                text: qsTr("Zoom")
+                text: qsTr("확대")
                 padding: 10
                 checkable: true
                 checked: Chiaki.window.videoMode == ChiakiWindow.VideoMode.Zoom
@@ -606,7 +606,7 @@ Item {
             ToolButton {
                 id: stretchButton
                 Layout.rightMargin: 50
-                text: qsTr("Stretch")
+                text: qsTr("화면 채우기")
                 padding: 10
                 checkable: true
                 checked: Chiaki.window.videoMode == ChiakiWindow.VideoMode.Stretch
@@ -624,7 +624,7 @@ Item {
 
             ToolButton {
                 id: defaultButton
-                text: qsTr("Default")
+                text: qsTr("기본")
                 padding: 10
                 checkable: true
                 checked: Chiaki.window.videoPreset == ChiakiWindow.VideoPreset.Default
@@ -645,7 +645,7 @@ Item {
 
             ToolButton {
                 id: highQualityButton
-                text: qsTr("High Quality")
+                text: qsTr("고화질")
                 padding: 10
                 checkable: true
                 checked: Chiaki.window.videoPreset == ChiakiWindow.VideoPreset.HighQuality
@@ -661,7 +661,7 @@ Item {
 
             ToolButton {
                 id: highQualitySpatialButton
-                text: qsTr("HQ + Spatial")
+                text: qsTr("고화질 + 공간 보정")
                 padding: 10
                 checkable: true
                 checked: Chiaki.window.videoPreset == ChiakiWindow.VideoPreset.HighQualitySpatial
@@ -677,7 +677,7 @@ Item {
 
             ToolButton {
                 id: highQualityAdvancedSpatialButton
-                text: qsTr("HQ + Adv Spatial")
+                text: qsTr("고화질 + 고급 공간 보정")
                 padding: 10
                 checkable: true
                 checked: Chiaki.window.videoPreset == ChiakiWindow.VideoPreset.HighQualityAdvancedSpatial
@@ -698,7 +698,7 @@ Item {
 
             ToolButton {
                 id: customButton
-                text: qsTr("Custom")
+                text: qsTr("사용자 설정")
                 Layout.rightMargin: 40
                 padding: 10
                 checkable: true
@@ -798,7 +798,7 @@ Item {
                     }
 
                     Label {
-                        text: qsTr("packet loss")
+                        text: qsTr("패킷 손실")
                         font.pixelSize: 15
                         opacity: parent.visible && Chiaki.session ? 1.0 : 0.0
                         visible: opacity
@@ -820,7 +820,7 @@ Item {
 
                     Label {
                         Layout.leftMargin: droppedFramesLabel.width + 6
-                        text: qsTr("dropped frames")
+                        text: qsTr("누락 프레임")
                         font.pixelSize: 15
                         opacity: parent.visible && Chiaki.window.droppedFrames ? 1.0 : 0.0
                         visible: opacity
@@ -933,7 +933,7 @@ Item {
         ColumnLayout {
             Label {
                 Layout.alignment: Qt.AlignCenter
-                text: qsTr("Disconnect Session")
+                text: qsTr("연결 종료")
                 font.bold: true
                 font.pixelSize: 24
             }
@@ -941,7 +941,7 @@ Item {
             Label {
                 Layout.topMargin: 10
                 Layout.alignment: Qt.AlignCenter
-                text: qsTr("Do you want the Console to go into sleep mode?")
+                text: qsTr("콘솔을 대기 모드로 전환하시겠습니까?")
                 font.pixelSize: 20
             }
 
@@ -955,7 +955,7 @@ Item {
                     Layout.preferredWidth: 200
                     Layout.minimumHeight: 80
                     Layout.maximumHeight: 80
-                    text: qsTr("Sleep")
+                    text: qsTr("대기 모드")
                     font.pixelSize: 24
                     Material.roundedScale: Material.SmallScale
                     Material.background: activeFocus ? parent.Material.accent : undefined
@@ -974,7 +974,7 @@ Item {
                     Layout.preferredWidth: 200
                     Layout.minimumHeight: 80
                     Layout.maximumHeight: 80
-                    text: qsTr("No")
+                    text: qsTr("아니요")
                     font.pixelSize: 24
                     Material.roundedScale: Material.SmallScale
                     Material.background: activeFocus ? parent.Material.accent : undefined
@@ -1032,7 +1032,7 @@ Item {
 
             Label {
                 Layout.alignment: Qt.AlignCenter
-                text: qsTr("Disconnect Session")
+                text: qsTr("연결 종료")
                 font.bold: true
                 font.pixelSize: 24
             }
@@ -1040,7 +1040,7 @@ Item {
             Label {
                 Layout.topMargin: 10
                 Layout.alignment: Qt.AlignCenter
-                text: qsTr("Do you want the Console to go into sleep mode?")
+                text: qsTr("콘솔을 대기 모드로 전환하시겠습니까?")
                 font.pixelSize: 20
             }
 
@@ -1054,7 +1054,7 @@ Item {
                     Layout.preferredWidth: 200
                     Layout.minimumHeight: 80
                     Layout.maximumHeight: 80
-                    text: qsTr("Sleep")
+                    text: qsTr("대기 모드")
                     font.pixelSize: 24
                     Material.roundedScale: Material.SmallScale
                     Material.background: activeFocus ? parent.Material.accent : undefined
@@ -1072,7 +1072,7 @@ Item {
                     Layout.preferredWidth: 200
                     Layout.minimumHeight: 80
                     Layout.maximumHeight: 80
-                    text: qsTr("No")
+                    text: qsTr("아니요")
                     font.pixelSize: 24
                     Material.roundedScale: Material.SmallScale
                     Material.background: activeFocus ? parent.Material.accent : undefined
@@ -1093,7 +1093,7 @@ Item {
         parent: Overlay.overlay
         x: Math.round((root.width - width) / 2)
         y: Math.round((root.height - height) / 2)
-        title: qsTr("Console Login PIN")
+        title: qsTr("콘솔 로그인 PIN")
         modal: true
         closePolicy: Popup.NoAutoClose
         standardButtons: Dialog.Ok | Dialog.Cancel
@@ -1168,7 +1168,7 @@ Item {
 
             Label {
                 Layout.alignment: Qt.AlignCenter
-                text: qsTr("Console Login PIN")
+                text: qsTr("콘솔 로그인 PIN")
                 font.bold: true
                 font.pixelSize: 24
             }
@@ -1189,7 +1189,7 @@ Item {
                 spacing: 16
 
                 Button {
-                    text: qsTr("Cancel")
+                    text: qsTr("취소")
                     Keys.onReturnPressed: clicked()
                     onClicked: {
                         separateSessionPinWindow.visible = false;
@@ -1199,7 +1199,7 @@ Item {
 
                 Button {
                     id: separatePinOkButton
-                    text: qsTr("OK")
+                    text: qsTr("확인")
                     enabled: separatePinField.acceptableInput
                     Keys.onReturnPressed: clicked()
                     onClicked: {

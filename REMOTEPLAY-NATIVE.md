@@ -1,0 +1,3 @@
+# RemotePlay Native
+
+Windows-oriented experimental fork of chiaki-ng. Upstream AGPL/OpenSSL licensing remains intact. No Veyra code or capture-card integration. Changes: long-uptime timer arithmetic, LAN retry interval, fresh-session reconnect following an established transport failure, separate application settings, conservative disconnect behavior, local/remote bitrate defaults, partial Korean UI. Existing hardware decode and libplacebo rendering are retained. No new AI enhancement or frame interpolation. Windows build and console tests are required; performance superiority is not established.

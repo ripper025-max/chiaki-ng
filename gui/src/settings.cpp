@@ -565,12 +565,12 @@ unsigned int Settings::GetBitrateRemotePS4() const
 
 unsigned int Settings::GetBitrateLocalPS5() const
 {
-	return settings.value("settings/bitrate_local_ps5", 0).toUInt();
+	return settings.value("settings/bitrate_local_ps5", 18000).toUInt();
 }
 
 unsigned int Settings::GetBitrateRemotePS5() const
 {
-	return settings.value("settings/bitrate_remote_ps5", 0).toUInt();
+	return settings.value("settings/bitrate_remote_ps5", 10000).toUInt();
 }
 
 void Settings::SetBitrateLocalPS4(unsigned int bitrate)
@@ -1143,7 +1143,7 @@ static const QMap<DisconnectAction, QString> disconnect_action_values = {
 	{ DisconnectAction::AlwaysSleep, "sleep" }
 };
 
-static const DisconnectAction disconnect_action_default = DisconnectAction::Ask;
+static const DisconnectAction disconnect_action_default = DisconnectAction::AlwaysNothing;
 
 DisconnectAction Settings::GetDisconnectAction()
 {
