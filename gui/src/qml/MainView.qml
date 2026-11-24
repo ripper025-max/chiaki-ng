@@ -14,11 +14,11 @@ Pane {
         {
             root.initialAsk = true;
             if(Chiaki.settings.addSteamShortcutAsk && (typeof Chiaki.createSteamShortcut === "function"))
-                root.showRemindDialog(qsTr("Official Steam artwork + controller layout"), qsTr("Would you like to either create a new non-Steam game for chiaki-ng\nor update an existing non-Steam game with the official artwork and controller layout?") + "\n\n" + qsTr("(Note: If you select no now and want to do this later, click the button or press R3 from the main menu.)"), false, () => root.showSteamShortcutDialog(true));
+                root.showRemindDialog(qsTr("스팀 이미지 및 컨트롤러 설정"), qsTr("RemotePlay Native를 스팀에 등록하고 공식 이미지와 컨트롤러 설정을 적용하시겠습니까?") + "\n\n" + qsTr("(나중에 메인 메뉴에서 버튼을 누르거나 R3를 눌러 설정할 수 있습니다.)"), false, () => root.showSteamShortcutDialog(true));
             else if(Chiaki.settings.remotePlayAsk)
             {
                 if(!Chiaki.settings.psnRefreshToken || !Chiaki.settings.psnAuthToken || !Chiaki.settings.psnAuthTokenExpiry || !Chiaki.settings.psnAccountId)
-                    root.showRemindDialog(qsTr("Remote Play via PSN"), qsTr("Would you like to connect to PSN?\nThis enables:\n- Automatic registration\n- Playing outside of your home network without port forwarding?") + "\n\n" + qsTr("(Note: If you select no now and want to do this later, go to the Config section of the settings.)"), true, () => root.showPSNTokenDialog(false));
+                    root.showRemindDialog(qsTr("PSN 원격 플레이"), qsTr("PSN 계정을 연결하시겠습니까?\n- PS5 자동 등록\n- 포트포워딩 없이 외부 인터넷 연결") + "\n\n" + qsTr("(나중에 설정의 계정 및 구성 메뉴에서 연결할 수 있습니다.)"), true, () => root.showPSNTokenDialog(false));
                 else
                     Chiaki.settings.remotePlayAsk = false;
             }
@@ -227,10 +227,10 @@ Pane {
 
             function deleteHost() {
                 if (modelData.manual)
-                    root.showConfirmDialog(qsTr("콘솔 삭제"), qsTr("Are you sure you want to delete this console?"), () => {Chiaki.deleteHost(index)});
+                    root.showConfirmDialog(qsTr("콘솔 삭제"), qsTr("이 콘솔을 삭제하시겠습니까?"), () => {Chiaki.deleteHost(index)});
                         
                 else if (modelData.discovered && !modelData.registered)
-                    root.showConfirmDialog(qsTr("콘솔 숨기기"), qsTr("Are you sure you want to hide this console?") + "\n\n" + qsTr("Note: You can unhide from the Consoles section of the Settings under Hidden Consoles"), () => Chiaki.hideHost(modelData.mac, modelData.name));
+                    root.showConfirmDialog(qsTr("콘솔 숨기기"), qsTr("이 콘솔을 숨기시겠습니까?") + "\n\n" + qsTr("설정의 콘솔 메뉴에서 숨김을 해제할 수 있습니다."), () => Chiaki.hideHost(modelData.mac, modelData.name));
 
             }
 
@@ -279,12 +279,12 @@ Pane {
                             if(modelData.discovered)
                             {
                                 if(modelData.manual)
-                                    t += qsTr("discovered + manual")
+                                    t += qsTr("자동 검색 및 수동 등록")
                                 else
-                                    t += qsTr("discovered");
+                                    t += qsTr("자동 검색");
                             }
                             else
-                                t += qsTr("manual");
+                                t += qsTr("수동 등록");
                         }
                         return t;
                     }
@@ -296,13 +296,13 @@ Pane {
                         let t = "";
                         if(modelData.duid)
                             return t;
-                        t += qsTr("State: %1").arg(modelData.state);
+                        t += qsTr("상태: %1").arg(modelData.state);
                         if(!modelData.discovered)
                             return t;
                         if (modelData.app)
-                            t += "\n" + qsTr("App: %1").arg(modelData.app);
+                            t += "\n" + qsTr("실행 중: %1").arg(modelData.app);
                         if (modelData.titleId)
-                            t += "\n" + qsTr("Title ID: %1").arg(modelData.titleId);
+                            t += "\n" + qsTr("게임 ID: %1").arg(modelData.titleId);
                         return t;
                     }
                 }

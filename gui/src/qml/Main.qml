@@ -488,7 +488,7 @@ Item {
                 Layout.alignment: Qt.AlignCenter
 
                 Button {
-                    text: qsTr("OK")
+                    text: qsTr("확인")
                     Material.background: Material.accent
                     flat: true
                     leftPadding: 50
@@ -551,9 +551,9 @@ Item {
             else
             {
                 if(ps5)
-                    root.showConfirmDialog(qsTr("Registration Type"), qsTr("Would you like to use automatic registration?"), () => root.autoRegister(true, host, ps5), () => root.autoRegister(false, host, ps5))
+                    root.showConfirmDialog(qsTr("등록 방식"), qsTr("자동 등록을 사용하시겠습니까?"), () => root.autoRegister(true, host, ps5), () => root.autoRegister(false, host, ps5))
                 else
-                    root.showConfirmDialog(qsTr("Registration Type"), qsTr("Would you like to use automatic registration (must be main PS4 console registered to your PSN)?"), () => root.autoRegister(true, host, ps5), () => root.autoRegister(false, host, ps5))
+                    root.showConfirmDialog(qsTr("등록 방식"), qsTr("자동 등록을 사용하시겠습니까? (PSN에 등록된 주 PS4 콘솔 필요)"), () => root.autoRegister(true, host, ps5), () => root.autoRegister(false, host, ps5))
             }
         }
 
