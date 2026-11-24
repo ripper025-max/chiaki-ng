@@ -111,18 +111,34 @@ jobs:
           cmake --build build --config Release
           cmake --install build
 
-      - name: Setup shaderc
+      - name: Setup shaderc from official SDK or pinned source
+        shell: pwsh
         run: |
-          $ProgressPreference = 'SilentlyContinue'
-          $url = ((Invoke-WebRequest -UseBasicParsing -Uri "https://storage.googleapis.com/shaderc/badges/build_link_windows_vs2019_release.html").Content | Select-String -Pattern 'url=(.*)"').Matches.Groups[1].Value
-          Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile .\shaderc.zip
-          Expand-Archive -LiteralPath "shaderc.zip" -DestinationPath "."
-          cp "./install/*" "./${{ env.dep_folder }}" -Force -Recurse
-          rm "./install" -r -force
+          $ErrorActionPreference = 'Stop'
+          $sdk = $env:VULKAN_SDK
+          $deps = Join-Path $PWD $env:dep_folder
+          if ((Test-Path "$sdk/Lib/shaderc_shared.lib") -and (Test-Path "$sdk/Bin/shaderc_shared.dll") -and (Test-Path "$sdk/Include/shaderc/shaderc.h")) {
+            New-Item -ItemType Directory -Force "$deps/include", "$deps/lib", "$deps/bin" | Out-Null
+            Copy-Item "$sdk/Include/shaderc" "$deps/include" -Recurse -Force
+            Copy-Item "$sdk/Lib/shaderc_shared.lib" "$deps/lib" -Force
+            Copy-Item "$sdk/Bin/shaderc_shared.dll" "$deps/bin" -Force
+          } else {
+            git init shaderc-src
+            git -C shaderc-src remote add origin https://github.com/google/shaderc.git
+            git -C shaderc-src fetch --depth 1 origin 75137cca3b41a59b8b3e5c42177da8a9490c042f
+            git -C shaderc-src checkout --detach FETCH_HEAD
+            python shaderc-src/utils/git-sync-deps
+            cmake -S shaderc-src -B shaderc-build -G Ninja -DCMAKE_BUILD_TYPE=Release "-DCMAKE_INSTALL_PREFIX=$deps" -DSHADERC_SKIP_TESTS=ON -DSHADERC_SKIP_EXAMPLES=ON -DSHADERC_SKIP_COPYRIGHT_CHECK=ON -DSHADERC_ENABLE_SHARED_CRT=ON
+            cmake --build shaderc-build --config Release --parallel 4
+            cmake --install shaderc-build --config Release
+          }
+          foreach ($required in @('include/shaderc/shaderc.h','lib/shaderc_shared.lib','bin/shaderc_shared.dll')) {
+            if (-not (Test-Path "$deps/$required")) { throw "Missing shaderc dependency: $required" }
+          }
 
       - name: Make build directory
         run: |
-          mkdir build
+          New-Item -ItemType Directory -Force build | Out-Null
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
@@ -162,6 +178,12 @@ jobs:
           git -C ngx-sdk checkout --detach FETCH_HEAD
           if (-not (Test-Path "ngx-sdk/lib/Windows_x86_64/x64/nvsdk_ngx_d.lib")) { throw "Official NGX library missing" }
 
+      - name: Test adaptive upscaling controller
+        shell: pwsh
+        run: |
+          clang-cl /std:c++17 /EHsc /Igui/include test/native_upscale_governor.cpp /Fe:native-upscale-test.exe
+          ./native-upscale-test.exe
+
       - name: Configure chiaki-ng
         run: |
           cmake `
@@ -193,7 +215,7 @@ jobs:
           cp "${{ github.workspace }}\${{ env.dep_folder }}\bin\SDL2.dll" chiaki-ng-Win
           cp "${{ github.workspace }}\${{ env.dep_folder }}\bin\SDL3.dll" chiaki-ng-Win
           cp "${env:VCPKG_INSTALLED_DIR}\${{ env.triplet }}\bin\hidapi.dll" chiaki-ng-Win
-          cp "${env:VCPKG_INSTALLED_DIR}\${{ env.triplet }}\bin\fftw3.dll" chiaki-ng-Win
+          if (Test-Path "${env:VCPKG_INSTALLED_DIR}\${{ env.triplet }}\bin\fftw3.dll") { cp "${env:VCPKG_INSTALLED_DIR}\${{ env.triplet }}\bin\fftw3.dll" chiaki-ng-Win }
           cp "${env:VCPKG_INSTALLED_DIR}\${{ env.triplet }}\bin\opus.dll" chiaki-ng-Win
           cp "${env:VCPKG_INSTALLED_DIR}\${{ env.triplet }}\bin\libspeexdsp.dll" chiaki-ng-Win
           cp "${env:VCPKG_INSTALLED_DIR}\${{ env.triplet }}\bin\lcms2.dll" chiaki-ng-Win
