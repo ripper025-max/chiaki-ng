@@ -60,10 +60,17 @@ jobs:
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
       - name: Setup Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.12.*"
+          version: "6.10.2"
+          arch: win64_msvc2022_64
+          cache: true
           host: 'windows'
           target: 'desktop'
           modules: 'qtwebengine qtpositioning qtwebchannel qtwebsockets qtserialport'
