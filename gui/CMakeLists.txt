@@ -43,6 +43,14 @@ set(SOURCE_FILES
 	src/jsonrequester.cpp
 	src/qml/qml.qrc
 	include/qmlmainwindow.h
+	include/rtxvsr.h
+	src/rtxvsr.cpp
+	include/ngxcore.h
+	src/ngxcore.cpp
+	include/vkguard.h
+	src/vkguard.c
+	include/flowfg.h
+	src/flowfg.cpp
 	src/qmlmainwindow.cpp
 	include/qmlbackend.h
 	src/qmlbackend.cpp
@@ -99,6 +107,22 @@ target_link_libraries(placebo-libav-impl PkgConfig::LIBPLACEBO FFMPEG::avcodec F
 target_link_libraries(chiaki PkgConfig::LIBPLACEBO placebo-libav-impl)
 
 target_link_libraries(chiaki chiaki-lib)
+if(WIN32)
+    target_link_libraries(chiaki version wintrust crypt32)
+endif()
+set(CHIAKI_NATIVE_NGX_SDK "" CACHE PATH "Official NVIDIA NGX SDK directory")
+if(CHIAKI_NATIVE_NGX_SDK)
+    if(NOT WIN32 OR NOT MSVC)
+        message(FATAL_ERROR "Native RTX VSR requires MSVC/clang-cl on Windows")
+    endif()
+    set(NATIVE_NGX_LIB "${CHIAKI_NATIVE_NGX_SDK}/lib/Windows_x86_64/x64/nvsdk_ngx_d.lib")
+    if(NOT EXISTS "${NATIVE_NGX_LIB}")
+        message(FATAL_ERROR "Official NGX library not found")
+    endif()
+    target_include_directories(chiaki PRIVATE "${CHIAKI_NATIVE_NGX_SDK}/include")
+    target_compile_definitions(chiaki PRIVATE CHIAKI_HAVE_NGX)
+    target_link_libraries(chiaki "${NATIVE_NGX_LIB}" advapi32 user32 setupapi shell32 ole32)
+endif()
 if(CHIAKI_ENABLE_CLI)
 	add_definitions(-DCHIAKI_ENABLE_CLI)
 	target_link_libraries(chiaki chiaki-cli-lib)

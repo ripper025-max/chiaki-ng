@@ -61,6 +61,9 @@ extern "C" {
 #include <limits>
 #include <utility>
 #include <atomic>
+#include <array>
+#include <vector>
+#include <cmath>
 #if defined(Q_OS_MACOS)
 #include <objc/message.h>
 #include <objc/runtime.h>
@@ -2678,6 +2681,13 @@ QmlMainWindow::~QmlMainWindow()
     }
     pl_cache_destroy(&placebo_cache);
     pl_queue_destroy(&placebo_queue);
+    delete native_rtx;
+    native_rtx = nullptr;
+    delete native_flow;
+    native_flow = nullptr;
+    pl_tex_destroy(placeboGpu(), &native_flow_prev);
+    pl_tex_destroy(placeboGpu(), &native_flow_next);
+    pl_tex_destroy(placeboGpu(), &native_flow_output);
     pl_renderer_destroy(&placebo_renderer);
     // User shader hooks hold a reference to the GPU (their descriptors destroy
     // buffers/textures via p->gpu), so they must be released before the GPU is.
@@ -2960,6 +2970,8 @@ const struct pl_filter_config *QmlMainWindow::effectiveFrameMixerConfig(const st
 {
     if (bypass_frame_queue)
         return nullptr;
+    if (nativeFlowEnabled() && render_backend == RenderBackend::Vulkan)
+        return pl_find_filter_config("linear", PL_FILTER_FRAME_MIXING);
     Q_UNUSED(render_params);
 
     switch (video_preset) {
@@ -2987,6 +2999,8 @@ bool QmlMainWindow::configuredFrameMixerEnabledForScheduling() const
 {
     if (bypass_frame_queue)
         return false;
+    if (nativeFlowEnabled() && render_backend == RenderBackend::Vulkan)
+        return true;
     switch (video_preset) {
     case VideoPreset::Fast:
         return frame_mixer_config(settings) != nullptr;
@@ -3568,8 +3582,111 @@ QString QmlMainWindow::nativeUpscaleMode() const
     case 1: return QStringLiteral("FSR");
     case 2: return QStringLiteral("AI CNN-8");
     case 3: return QStringLiteral("AI CNN-16");
+    case 4: return QStringLiteral("RTX VSR");
     default: return QStringLiteral("Native");
     }
+}
+
+bool QmlMainWindow::nativeRtxAvailable() const
+{
+    return native_rtx && nvidiaCard() && !RtxVsr::dllVersion().isEmpty();
+}
+void QmlMainWindow::setNativeRtxQuality(int quality)
+{
+    quality = qBound(0, quality, 4);
+    if (native_rtx_quality.fetchAndStoreRelaxed(quality) == quality) return;
+    if (settings) settings->SetNativeRtxQuality(quality);
+    emit nativeRtxQualityChanged();
+}
+void QmlMainWindow::setNativeFlowEnabled(bool enabled)
+{
+    const int value = enabled ? 1 : 0;
+    if (native_flow_enabled.fetchAndStoreRelaxed(value) == value) return;
+    if (settings) settings->SetNativeFlowEnabled(enabled);
+    schedule_frame_mixer_active.storeRelaxed(configuredFrameMixerEnabledForScheduling() ? 1 : 0);
+    emit nativeFlowEnabledChanged();
+}
+bool QmlMainWindow::nativeFlowFrame(const struct pl_frame_mix &mix, struct pl_frame &out)
+{
+    if (native_flow_failed || mix.num_frames < 2 || !mix.timestamps || !mix.signatures)
+        return false;
+    int a = -1, b = -1;
+    for (int i = 0; i < mix.num_frames; ++i) {
+        if (mix.timestamps[i] <= 0.0) a = i;
+        else { b = i; break; }
+    }
+    if (a < 0 || b < 0) return false;
+    const double span = mix.timestamps[b] - mix.timestamps[a];
+    if (span <= 0.0 || span > 2.0) return false;
+    const float t = static_cast<float>(-mix.timestamps[a] / span);
+    if (t < 0.08f || t > 0.92f) return false;
+    const auto *prev = mix.frames[a], *next = mix.frames[b];
+    if (!prev || !next || prev->num_planes <= 0 || next->num_planes <= 0 ||
+        pl_color_space_is_hdr(&prev->color) || pl_color_space_is_hdr(&next->color))
+        return false;
+    const int w = static_cast<int>(std::lround(std::fabs(pl_rect_w(prev->crop))));
+    const int h = static_cast<int>(std::lround(std::fabs(pl_rect_h(prev->crop))));
+    if (w < 16 || h < 16 || w > 1920 || h > 1080 ||
+        w != static_cast<int>(std::lround(std::fabs(pl_rect_w(next->crop)))) ||
+        h != static_cast<int>(std::lround(std::fabs(pl_rect_h(next->crop))))) return false;
+    const auto gpu = placeboGpu();
+    if (!native_flow) {
+        native_flow = new FlowInterpolator(placebo_log, gpu);
+        if (!native_flow->init()) { native_flow_failed = true; return false; }
+    }
+    const pl_fmt fmt = pl_find_named_fmt(gpu, "rgba8");
+    if (!fmt) return false;
+    struct pl_tex_params tp = {};
+    tp.w = w; tp.h = h; tp.format = fmt;
+    tp.sampleable = tp.renderable = tp.storable = true;
+    const bool resize = !native_flow_prev || native_flow_prev->params.w != w || native_flow_prev->params.h != h;
+    if (resize) {
+        native_flow->invalidate();
+        native_flow_pair_valid = false;
+    }
+    if (!pl_tex_recreate(gpu, &native_flow_prev, &tp) ||
+        !pl_tex_recreate(gpu, &native_flow_next, &tp) ||
+        !pl_tex_recreate(gpu, &native_flow_output, &tp)) {
+        native_flow_pair_valid = false; return false;
+    }
+    auto make = [&](pl_tex tex) {
+        struct pl_frame f = {};
+        f.num_planes = 1;
+        f.planes[0].texture = tex;
+        f.planes[0].components = 3;
+        for (int i = 0; i < 3; ++i) f.planes[0].component_mapping[i] = i;
+        f.repr = pl_color_repr_rgb;
+        f.color = pl_color_space_bt709;
+        f.crop = { 0.f, 0.f, static_cast<float>(w), static_cast<float>(h) };
+        return f;
+    };
+    const uint64_t epoch = native_session_epoch.loadAcquire() * 0x9e3779b97f4a7c15ull;
+    const uint64_t ka = mix.signatures[a] ^ epoch, kb = mix.signatures[b] ^ epoch;
+    if (ka == kb) return false;
+    if (!(native_flow_pair_valid && ka == native_flow_prev_key && kb == native_flow_next_key)) {
+        const bool consecutive = native_flow_pair_valid && ka == native_flow_next_key;
+        if (consecutive) std::swap(native_flow_prev, native_flow_next);
+        else native_flow->invalidate();
+        auto conversion = pl_render_default_params;
+        conversion.frame_mixer = nullptr;
+        auto target_a = make(native_flow_prev);
+        auto target_b = make(native_flow_next);
+        if ((!consecutive && !pl_render_image(placebo_renderer, prev, &target_a, &conversion)) ||
+            !pl_render_image(placebo_renderer, next, &target_b, &conversion)) {
+            native_flow_pair_valid = false; return false;
+        }
+        native_flow_prev_key = ka; native_flow_next_key = kb;
+        native_flow_last_t = -1.f;
+        native_flow_pair_valid = true;
+    }
+    if (std::fabs(native_flow_last_t - t) > 0.02f) {
+        if (!native_flow->interpolate(native_flow_prev, native_flow_next, &native_flow_output, &t, 1)) {
+            native_flow_failed = true; return false;
+        }
+        native_flow_last_t = t;
+    }
+    out = make(native_flow_output);
+    return true;
 }
 
 double QmlMainWindow::pendingFrameAge() const
@@ -4845,6 +4962,8 @@ void QmlMainWindow::doneOpenGLContextCurrent()
 void QmlMainWindow::init(Settings *settings, bool exit_app_on_stream_exit)
 {
     bypass_frame_queue = settings->GetDirectFrameMapping();
+    native_rtx_quality.storeRelease(qBound(0, settings->GetNativeRtxQuality(), 4));
+    native_flow_enabled.storeRelease(settings->GetNativeFlowEnabled() ? 1 : 0);
     render_backend = settings->GetRenderBackend();
     setSurfaceType(render_backend == RenderBackend::Vulkan ? QWindow::VulkanSurface : QWindow::OpenGLSurface);
     qparams = {};
@@ -4989,15 +5108,18 @@ void QmlMainWindow::init(Settings *settings, bool exit_app_on_stream_exit)
         vk_exts[0] = VK_KHR_WIN32_SURFACE_EXTENSION_NAME;
 #endif
 
-        const char *opt_extensions[] = {
-            VK_EXT_HDR_METADATA_EXTENSION_NAME,
+        std::vector<const char *> opt_extensions = { VK_EXT_HDR_METADATA_EXTENSION_NAME };
+        std::vector<const char *> opt_dev_extensions = {
+            VK_KHR_VIDEO_QUEUE_EXTENSION_NAME, VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME,
+            VK_KHR_VIDEO_DECODE_H264_EXTENSION_NAME, VK_KHR_VIDEO_DECODE_H265_EXTENSION_NAME
         };
+        RtxVsr::appendRequiredExtensions(opt_extensions, opt_dev_extensions);
 
         struct pl_vk_inst_params vk_inst_params = {
             .extensions = vk_exts,
             .num_extensions = 2,
-            .opt_extensions = opt_extensions,
-            .num_opt_extensions = 1,
+            .opt_extensions = opt_extensions.data(),
+            .num_opt_extensions = static_cast<int>(opt_extensions.size()),
         };
         placebo_vk_inst = pl_vk_inst_create(placebo_log, &vk_inst_params);
         if (!placebo_vk_inst) {
@@ -5027,12 +5149,7 @@ void QmlMainWindow::init(Settings *settings, bool exit_app_on_stream_exit)
         GET_PROC(vkGetPhysicalDeviceProperties2)
 #undef GET_PROC
 
-        const char *opt_dev_extensions[] = {
-            VK_KHR_VIDEO_QUEUE_EXTENSION_NAME,
-            VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME,
-            VK_KHR_VIDEO_DECODE_H264_EXTENSION_NAME,
-            VK_KHR_VIDEO_DECODE_H265_EXTENSION_NAME,
-        };
+
 
         struct pl_vulkan_params vulkan_params = {
             .instance = placebo_vk_inst->instance,
@@ -5040,8 +5157,8 @@ void QmlMainWindow::init(Settings *settings, bool exit_app_on_stream_exit)
             .allow_software = true,
             PL_VULKAN_DEFAULTS
             .extra_queues = VK_QUEUE_VIDEO_DECODE_BIT_KHR,
-            .opt_extensions = opt_dev_extensions,
-            .num_opt_extensions = 4,
+            .opt_extensions = opt_dev_extensions.data(),
+            .num_opt_extensions = static_cast<int>(opt_dev_extensions.size()),
         };
         placebo_vulkan = pl_vulkan_create(placebo_log, &vulkan_params);
         if (!placebo_vulkan) {
@@ -5126,6 +5243,8 @@ renderer_backend_ready:
     );
 
     placebo_queue = pl_queue_create(placeboGpu());
+    if (render_backend == RenderBackend::Vulkan && RtxVsr::compiledIn())
+        native_rtx = new RtxVsr(placebo_log);
 
     if (render_backend == RenderBackend::Vulkan) {
         struct pl_vulkan_sem_params sem_params = {
@@ -5172,6 +5291,7 @@ renderer_backend_ready:
         const bool preserve_startup_warmup = s && startup_warmup_preserve_next_session_change;
         startup_warmup_preserve_next_session_change = false;
         session = s;
+        native_session_epoch.fetchAndAddRelaxed(1);
         stream_session_active.storeRelease(s ? 1 : 0);
         startup_video_visible_generation.fetchAndAddRelaxed(1);
         grab_input = 0;
@@ -6805,6 +6925,7 @@ void QmlMainWindow::render()
             direct_frame = {};
         }
         if (incoming) {
+            ++native_direct_signature;
             pl_unmap_avframe(placeboGpu(), &direct_frame);
             direct_frame = {};
             pl_avframe_params avparams = {};
@@ -7614,14 +7735,63 @@ void QmlMainWindow::render()
         startup_video_visible_pending.storeRelease(1);
     }
 
+    // Optional optical-flow interpolation, only when actual adjacent source frames exist.
+    struct pl_frame generated = {};
+    bool flow_applied = nativeFlowEnabled() && !bypass_frame_queue && stream_active &&
+        render_backend == RenderBackend::Vulkan && stream_interval_s > 0.0 &&
+        refresh_rate * stream_interval_s >= 1.5 && nativeFlowFrame(frame_mix, generated);
+    if (native_flow_active.fetchAndStoreRelaxed(flow_applied ? 1 : 0) != (flow_applied ? 1 : 0))
+        emit nativeFlowActiveChanged();
+    constexpr int max_vsr_frames = 8;
+    struct pl_frame_mix render_mix = frame_mix;
+    std::array<struct pl_frame, max_vsr_frames> enhanced = {};
+    std::array<const struct pl_frame *, max_vsr_frames> enhanced_ptrs = {};
+    std::array<uint64_t, max_vsr_frames> enhanced_keys = {};
+    bool vsr_applied = false;
+    const int quality = nativeRtxQuality();
+    const uint64_t epoch = native_session_epoch.loadAcquire() * 0x9e3779b97f4a7c15ull;
+    if (!flow_applied && quality > 0 && stream_active && nativeRtxAvailable() &&
+        native_rtx->ensureInitialized(placebo_vulkan)) {
+        const int w = static_cast<int>(std::lround(std::fabs(pl_rect_w(target_frame.crop))));
+        const int h = static_cast<int>(std::lround(std::fabs(pl_rect_h(target_frame.crop))));
+        if (bypass_frame_queue) {
+            uint64_t key = 0;
+            if (native_rtx->process(&direct_render_frame, native_direct_signature ^ epoch,
+                                    w, h, quality, &enhanced[0], &key)) {
+                direct_render_frame = enhanced[0];
+                vsr_applied = true;
+            }
+        } else if (frame_mix.num_frames > 0 && frame_mix.num_frames <= max_vsr_frames && frame_mix.signatures) {
+            vsr_applied = true;
+            for (int i = 0; i < frame_mix.num_frames && vsr_applied; ++i) {
+                vsr_applied = native_rtx->process(frame_mix.frames[i], frame_mix.signatures[i] ^ epoch,
+                    w, h, quality, &enhanced[i], &enhanced_keys[i]);
+                enhanced_ptrs[i] = &enhanced[i];
+            }
+            if (vsr_applied) {
+                render_mix.frames = enhanced_ptrs.data();
+                render_mix.signatures = enhanced_keys.data();
+            }
+        }
+    }
+    if (vsr_applied) {
+        params.hooks = nullptr;
+        params.num_hooks = 0;
+        if (native_upscale_mode.fetchAndStoreRelaxed(4) != 4)
+            emit nativeUpscaleModeChanged();
+    }
+    if (flow_applied) params.frame_mixer = nullptr;
+
     const qint64 render_call_begin_us = static_cast<qint64>(chiaki_time_now_monotonic_us());
     if (render_entry_us_local > 0 && render_call_begin_us >= render_entry_us_local)
         logLatencyStats("render_prep", render_call_begin_us - render_entry_us_local);
     if (render_call_begin_us >= render_setup_begin_us)
         logRenderSetupStats(render_call_begin_us, render_call_begin_us - render_setup_begin_us);
-    if (!(bypass_frame_queue
+    if (!(flow_applied
+        ? pl_render_image(placebo_renderer, &generated, &target_frame, &params)
+        : bypass_frame_queue
         ? pl_render_image(placebo_renderer, &direct_render_frame, &target_frame, &params)
-        : pl_render_image_mix(placebo_renderer, &frame_mix, &target_frame, &params)))
+        : pl_render_image_mix(placebo_renderer, &render_mix, &target_frame, &params)))
     {
         qCWarning(chiakiGui) << "Failed to render Placebo frame!";
         close_started_frame(false);

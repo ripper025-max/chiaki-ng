@@ -373,6 +373,10 @@ class Settings : public QObject
 		uint GetCustomResolutionHeight() const;
 		void SetCustomResolutionHeight(uint length);
 
+		int GetNativeRtxQuality() const { return settings.value("settings/native_rtx_quality", 0).toInt(); }
+		void SetNativeRtxQuality(int quality) { settings.setValue("settings/native_rtx_quality", quality); }
+		bool GetNativeFlowEnabled() const { return settings.value("settings/native_flow_enabled", false).toBool(); }
+		void SetNativeFlowEnabled(bool enabled) { settings.setValue("settings/native_flow_enabled", enabled); }
 		PlaceboPreset GetPlaceboPreset() const;
 		void SetPlaceboPreset(PlaceboPreset preset);
 

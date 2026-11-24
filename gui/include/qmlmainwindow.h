@@ -3,6 +3,8 @@
 #include "streamsession.h"
 #include "settings.h"
 #include "nativeupscalegovernor.h"
+#include "rtxvsr.h"
+#include "flowfg.h"
 
 #include <QMutex>
 #include <QAtomicInteger>
@@ -69,6 +71,10 @@ class QmlMainWindow : public QWindow
     Q_PROPERTY(double queueDepthAverage READ queueDepthAverage NOTIFY queueDepthAverageChanged)
     Q_PROPERTY(double pendingFrameAge READ pendingFrameAge NOTIFY pendingFrameAgeChanged)
     Q_PROPERTY(QString nativeUpscaleMode READ nativeUpscaleMode NOTIFY nativeUpscaleModeChanged)
+    Q_PROPERTY(int nativeRtxQuality READ nativeRtxQuality WRITE setNativeRtxQuality NOTIFY nativeRtxQualityChanged)
+    Q_PROPERTY(bool nativeRtxAvailable READ nativeRtxAvailable CONSTANT)
+    Q_PROPERTY(bool nativeFlowEnabled READ nativeFlowEnabled WRITE setNativeFlowEnabled NOTIFY nativeFlowEnabledChanged)
+    Q_PROPERTY(bool nativeFlowActive READ nativeFlowActive NOTIFY nativeFlowActiveChanged)
 
 public:
     enum class UpdateRequestReason {
@@ -130,6 +136,12 @@ public:
     double queueDepthAverage() const;
     double pendingFrameAge() const;
     QString nativeUpscaleMode() const;
+    int nativeRtxQuality() const { return native_rtx_quality.loadAcquire(); }
+    bool nativeRtxAvailable() const;
+    void setNativeRtxQuality(int quality);
+    bool nativeFlowEnabled() const { return native_flow_enabled.loadAcquire() != 0; }
+    void setNativeFlowEnabled(bool enabled);
+    bool nativeFlowActive() const { return native_flow_active.loadAcquire() != 0; }
     QString describePlaceboDiscardReason(qint64 now_us) const;
 
     bool amdCard() const;
@@ -184,6 +196,9 @@ signals:
     void queueDepthAverageChanged();
     void pendingFrameAgeChanged();
     void nativeUpscaleModeChanged();
+    void nativeRtxQualityChanged();
+    void nativeFlowEnabledChanged();
+    void nativeFlowActiveChanged();
     void loadingTransitionCompleteChanged();
     void statsOverlayActiveChanged();
 
@@ -470,6 +485,19 @@ private:
     const struct pl_hook *fsrcnnx_hook_8 = nullptr;
     const struct pl_hook *fsrcnnx_hook_16 = nullptr;
     NativeUpscaleGovernor native_upscale_governor;
+    RtxVsr *native_rtx = nullptr;
+    FlowInterpolator *native_flow = nullptr;
+    QAtomicInteger<int> native_rtx_quality = 0;
+    QAtomicInteger<int> native_flow_enabled = 0;
+    QAtomicInteger<int> native_flow_active = 0;
+    QAtomicInteger<quint64> native_session_epoch = 0;
+    quint64 native_direct_signature = 0;
+    pl_tex native_flow_prev = nullptr, native_flow_next = nullptr, native_flow_output = nullptr;
+    uint64_t native_flow_prev_key = 0, native_flow_next_key = 0;
+    bool native_flow_pair_valid = false;
+    float native_flow_last_t = -1.0f;
+    bool native_flow_failed = false;
+    bool nativeFlowFrame(const struct pl_frame_mix &mix, struct pl_frame &out);
     QAtomicInteger<int> native_upscale_mode = 0;
 
     struct {

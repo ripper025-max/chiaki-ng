@@ -953,6 +953,34 @@ DialogView {
 
                     Label {
                         Layout.alignment: Qt.AlignRight
+                        text: qsTr("NVIDIA RTX VSR:")
+                    }
+                    C.ComboBox {
+                        Layout.preferredWidth: 400
+                        model: [qsTr("끄기"), qsTr("낮음"), qsTr("중간"), qsTr("높음"), qsTr("최고")]
+                        enabled: Chiaki.window.nativeRtxAvailable
+                        currentIndex: Chiaki.window.nativeRtxQuality
+                        onActivated: index => Chiaki.window.nativeRtxQuality = index
+                    }
+                    Label {
+                        Layout.alignment: Qt.AlignRight
+                        text: Chiaki.window.nativeRtxAvailable ? qsTr("(SDR / 공식 NVIDIA 런타임)") : qsTr("(공식 nvngx_vsr.dll 필요)")
+                    }
+                    Label {
+                        Layout.alignment: Qt.AlignRight
+                        text: qsTr("광학 흐름 프레임 생성:")
+                    }
+                    C.CheckBox {
+                        checked: Chiaki.window.nativeFlowEnabled
+                        enabled: !Chiaki.settings.directFrameMapping && Chiaki.settings.rendererBackend === 0
+                        onClicked: Chiaki.window.nativeFlowEnabled = checked
+                    }
+                    Label {
+                        Layout.alignment: Qt.AlignRight
+                        text: qsTr("(Frame Queue / Vulkan / 고주사율 모니터)")
+                    }
+                    Label {
+                        Layout.alignment: Qt.AlignRight
                         text: qsTr("Frame Delivery:")
                     }
 
