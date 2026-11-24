@@ -931,7 +931,7 @@ DialogView {
 
                     C.ComboBox {
                         Layout.preferredWidth: 520
-                        model: [qsTr("Fast"), qsTr("Default"), qsTr("High Quality"), qsTr("High Quality + Spatial Upscaling"), qsTr("High Quality + Advanced Spatial Upscaling"), qsTr("Custom")]
+                        model: [qsTr("Fast"), qsTr("Default"), qsTr("High Quality"), qsTr("AI 업스케일링 (균형)"), qsTr("AI 업스케일링 (고화질)"), qsTr("Custom")]
                         currentIndex: Chiaki.settings.videoPreset
                         onActivated: (index) => {
                             Chiaki.settings.videoPreset = index;
@@ -948,7 +948,7 @@ DialogView {
 
                     Label {
                         Layout.alignment: Qt.AlignRight
-                        text: qsTr("(High Quality)")
+                        text: qsTr("(AI 균형 / FSRCNNX)")
                     }
 
                     Label {

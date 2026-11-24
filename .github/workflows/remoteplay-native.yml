@@ -88,6 +88,11 @@ jobs:
           INSTALL_PREFIX=/mingw64 scripts/build-hidapi.sh .
           cp /mingw64/lib/pkgconfig/sdl2-compat.pc /mingw64/lib/pkgconfig/sdl2.pc
 
+      - name: Test adaptive upscaling controller
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -Igui/include test/native_upscale_governor.cpp -o native-upscale-test.exe
+          ./native-upscale-test.exe
+
       - name: Configure chiaki-ng
         run: |
           cmake -S . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCHIAKI_ENABLE_CLI=OFF
@@ -112,7 +117,7 @@ jobs:
       - name: Upload chiaki-ng Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: RemotePlay-Native-Windows-x64-portable
+          name: RemotePlay-Native-AI-Windows-x64-portable
           path: ${{ env.RELEASE_PACKAGE_PATH }}
           if-no-files-found: error
           retention-days: 30
@@ -126,7 +131,7 @@ jobs:
       - name: Upload chiaki-ng Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: RemotePlay-Native-Windows-x64-installer
+          name: RemotePlay-Native-AI-Windows-x64-installer
           path: chiaki-ng-windows-installer.exe
           if-no-files-found: error
           retention-days: 30

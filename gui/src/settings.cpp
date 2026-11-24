@@ -686,7 +686,7 @@ static const QMap<PlaceboPreset, QString> placebo_preset_values = {
 	{ PlaceboPreset::Custom, "custom" }
 };
 
-static const PlaceboPreset placebo_preset_default = PlaceboPreset::HighQuality;
+static const PlaceboPreset placebo_preset_default = PlaceboPreset::HighQualitySpatial;
 
 PlaceboPreset Settings::GetPlaceboPreset() const
 {

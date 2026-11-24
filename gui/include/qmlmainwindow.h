@@ -2,6 +2,7 @@
 
 #include "streamsession.h"
 #include "settings.h"
+#include "nativeupscalegovernor.h"
 
 #include <QMutex>
 #include <QAtomicInteger>
@@ -67,6 +68,7 @@ class QmlMainWindow : public QWindow
     Q_PROPERTY(int runtimeRendererBackend READ runtimeRendererBackend CONSTANT)
     Q_PROPERTY(double queueDepthAverage READ queueDepthAverage NOTIFY queueDepthAverageChanged)
     Q_PROPERTY(double pendingFrameAge READ pendingFrameAge NOTIFY pendingFrameAgeChanged)
+    Q_PROPERTY(QString nativeUpscaleMode READ nativeUpscaleMode NOTIFY nativeUpscaleModeChanged)
 
 public:
     enum class UpdateRequestReason {
@@ -127,6 +129,7 @@ public:
 
     double queueDepthAverage() const;
     double pendingFrameAge() const;
+    QString nativeUpscaleMode() const;
     QString describePlaceboDiscardReason(qint64 now_us) const;
 
     bool amdCard() const;
@@ -180,6 +183,7 @@ signals:
     void directStreamChanged();
     void queueDepthAverageChanged();
     void pendingFrameAgeChanged();
+    void nativeUpscaleModeChanged();
     void loadingTransitionCompleteChanged();
     void statsOverlayActiveChanged();
 
@@ -465,6 +469,8 @@ private:
     const struct pl_hook *fsr_hook = nullptr;
     const struct pl_hook *fsrcnnx_hook_8 = nullptr;
     const struct pl_hook *fsrcnnx_hook_16 = nullptr;
+    NativeUpscaleGovernor native_upscale_governor;
+    QAtomicInteger<int> native_upscale_mode = 0;
 
     struct {
         PFN_vkGetDeviceProcAddr vkGetDeviceProcAddr;

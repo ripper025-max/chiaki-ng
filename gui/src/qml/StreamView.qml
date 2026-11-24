@@ -336,6 +336,14 @@ Item {
 
                 Label {
                     Layout.alignment: Qt.AlignRight
+                    text: qsTr("영상 보정: ") + Chiaki.window.nativeUpscaleMode
+                    font.pixelSize: 15
+                    color: Material.accent
+                    visible: !!Chiaki.session
+                }
+
+                Label {
+                    Layout.alignment: Qt.AlignRight
                     text: qsTr("평균 영상 대기열")
                     font.pixelSize: 15
                     opacity: Chiaki.session ? 1 : 0
@@ -661,7 +669,7 @@ Item {
 
             ToolButton {
                 id: highQualitySpatialButton
-                text: qsTr("고화질 + 공간 보정")
+                text: qsTr("AI 균형")
                 padding: 10
                 checkable: true
                 checked: Chiaki.window.videoPreset == ChiakiWindow.VideoPreset.HighQualitySpatial
@@ -677,7 +685,7 @@ Item {
 
             ToolButton {
                 id: highQualityAdvancedSpatialButton
-                text: qsTr("고화질 + 고급 공간 보정")
+                text: qsTr("AI 고화질")
                 padding: 10
                 checkable: true
                 checked: Chiaki.window.videoPreset == ChiakiWindow.VideoPreset.HighQualityAdvancedSpatial

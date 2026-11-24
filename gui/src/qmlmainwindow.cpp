@@ -3562,6 +3562,16 @@ void QmlMainWindow::setQueuePtsOriginCached(double queue_pts_origin)
     queue_pts_origin_cached_us.store(origin_us, std::memory_order_release);
 }
 
+QString QmlMainWindow::nativeUpscaleMode() const
+{
+    switch (native_upscale_mode.loadAcquire()) {
+    case 1: return QStringLiteral("FSR");
+    case 2: return QStringLiteral("AI CNN-8");
+    case 3: return QStringLiteral("AI CNN-16");
+    default: return QStringLiteral("Native");
+    }
+}
+
 double QmlMainWindow::pendingFrameAge() const
 {
     QMutexLocker locker(&pending_frame_age_mutex);
@@ -7527,7 +7537,10 @@ void QmlMainWindow::render()
     if (sw_frame.color_repr.alpha == PL_ALPHA_NONE)
         params.background_transparency = 0.0;
 
+    // The existing trained FSRCNNX shaders run on the render GPU.
+    // Adapt only the built-in AI presets; custom filters remain user-controlled.
     const struct pl_hook *fsrcnnx_hook = nullptr;
+    int requested = 0;
     if (hint_frame) {
         const float src_width = fabsf(pl_rect_w(hint_frame->crop));
         const float src_height = fabsf(pl_rect_h(hint_frame->crop));
@@ -7537,44 +7550,36 @@ void QmlMainWindow::render()
             const float upscale_factor = qMin(dst_width / src_width, dst_height / src_height);
             fsrcnnx_hook = select_spatial_hook(video_preset, configured_upscaler, upscale_factor,
                                                fsr_hook, fsrcnnx_hook_8, fsrcnnx_hook_16);
+            if (video_preset == VideoPreset::HighQualitySpatial ||
+                video_preset == VideoPreset::HighQualityAdvancedSpatial) {
+                if (upscale_factor >= spatial_upscale_threshold)
+                    requested = video_preset == VideoPreset::HighQualityAdvancedSpatial ? 3 : 2;
+                else if (upscale_factor > 1.0f)
+                    requested = 1;
+                // Pending frame age and queue depth indicate latency pressure,
+                // not direct GPU utilization. Use hysteresis to avoid flicker.
+                const double age_limit = stream_interval_s > 0.0 ? stream_interval_s * 1.5 : 0.025;
+                const bool pressure = queueDepthAverage() >= 2.5 || pendingFrameAge() >= age_limit;
+                int level = native_upscale_governor.select(requested, pressure, chiaki_time_now_monotonic_us());
+                fsrcnnx_hook = nullptr;
+                if (level >= 3) fsrcnnx_hook = fsrcnnx_hook_16;
+                if (!fsrcnnx_hook && level >= 2) fsrcnnx_hook = fsrcnnx_hook_8;
+                if (!fsrcnnx_hook && level >= 1) fsrcnnx_hook = fsr_hook;
+            }
         }
+    }
+    if (!requested)
+        native_upscale_governor.select(0, false, chiaki_time_now_monotonic_us());
+    const int active_mode = !fsrcnnx_hook ? 0 : fsrcnnx_hook == fsrcnnx_hook_16 ? 3 :
+        fsrcnnx_hook == fsrcnnx_hook_8 ? 2 : 1;
+    if (native_upscale_mode.fetchAndStoreRelaxed(active_mode) != active_mode) {
+        qCInfo(chiakiGui) << "Native upscale mode:" << nativeUpscaleMode();
+        emit nativeUpscaleModeChanged();
     }
     const struct pl_hook *active_hooks[] = {fsrcnnx_hook};
     if (fsrcnnx_hook) {
         params.hooks = active_hooks;
         params.num_hooks = 1;
-        switch (video_preset) {
-        case VideoPreset::HighQualitySpatial:
-            if (fsrcnnx_hook == fsr_hook)
-                qCDebug(chiakiGui) << "Activating spatial upscaler: FSR (small upscale fallback)";
-            else
-                qCDebug(chiakiGui) << "Activating spatial upscaler: FSRCNNX x2 8-0-4-1";
-            break;
-        case VideoPreset::HighQualityAdvancedSpatial:
-            if (fsrcnnx_hook == fsr_hook)
-                qCDebug(chiakiGui) << "Activating spatial upscaler: FSR (small upscale fallback)";
-            else
-                qCDebug(chiakiGui) << "Activating spatial upscaler: FSRCNNX x2 16-0-4-1";
-            break;
-        case VideoPreset::Custom:
-            if (fsrcnnx_hook == fsr_hook) {
-                qCDebug(chiakiGui) << "Activating custom upscaler: FSR";
-            } else {
-                switch (configured_upscaler) {
-                case PlaceboUpscaler::FSRCNNX8:
-                qCDebug(chiakiGui) << "Activating custom upscaler: FSRCNNX x2 8-0-4-1";
-                break;
-                case PlaceboUpscaler::FSRCNNX16:
-                qCDebug(chiakiGui) << "Activating custom upscaler: FSRCNNX x2 16-0-4-1";
-                break;
-                default:
-                    break;
-                }
-            }
-            break;
-        default:
-            break;
-        }
     }
 
     for (int i = 0; i < frame_mix.num_frames; i++) {
