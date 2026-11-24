@@ -138,18 +138,3 @@ jobs:
           path: chiaki-ng-Win/
           if-no-files-found: error
           retention-days: 30
-
-      - name: Compile .ISS to .EXE Installer
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.9
-        with:
-          path: "scripts/chiaki-ng.iss"
-          options: /O+
-
-      - name: Upload chiaki-ng Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: RemotePlay-Native-AI-Windows-x64-installer
-          path: chiaki-ng-windows-installer.exe
-          if-no-files-found: error
-          retention-days: 30
-          
