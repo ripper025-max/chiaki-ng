@@ -36,13 +36,18 @@ jobs:
           echo "VCPKG_INSTALLED_DIR=${{ github.workspace }}\build\vcpkg_installed" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Setup Vulkan
+        shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
           $ProgressPreference = 'SilentlyContinue'
-          $ver = (Invoke-WebRequest -Uri "https://vulkan.lunarg.com/sdk/latest.json" | ConvertFrom-Json).windows
-          echo Version $ver
-          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/$ver/windows/vulkansdk-windows-X64-$ver.exe" -OutFile VulkanSDK.exe
-          echo Downloaded
-          .\VulkanSDK.exe --root ${{ env.VULKAN_SDK }}  --accept-licenses --default-answer --confirm-command install
+          $ver = (Invoke-RestMethod -Uri 'https://vulkan.lunarg.com/sdk/latest.json' -MaximumRetryCount 3 -RetryIntervalSec 5).windows
+          if ($ver -notmatch '^\d+\.\d+\.\d+\.\d+$') { throw "Unexpected Vulkan SDK version: $ver" }
+          Write-Host "Vulkan SDK version: $ver"
+          $installer = Join-Path $PWD 'VulkanSDK.exe'
+          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/$ver/windows/vulkansdk-windows-X64-$ver.exe" -OutFile $installer -MaximumRetryCount 3 -RetryIntervalSec 5
+          $proc = Start-Process -FilePath $installer -ArgumentList @('--root','C:\VulkanSDK','--accept-licenses','--default-answer','--confirm-command','install') -Wait -PassThru
+          if ($proc.ExitCode -ne 0) { throw "Vulkan installer failed: $($proc.ExitCode)" }
+          if (-not (Test-Path 'C:\VulkanSDK\Include\vulkan\vulkan.h')) { throw 'Vulkan SDK header missing after install' }
 
       - name: Set up Ninja
         run: choco install ninja
